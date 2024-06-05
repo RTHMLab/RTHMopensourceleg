@@ -15,8 +15,6 @@ import numpy as np
 from opensourceleg.osl import OpenSourceLeg
 from opensourceleg.tools import units
 
-print("Test")
-
 osl = OpenSourceLeg(frequency=200)
 osl.add_joint("knee", gear_ratio=9 * 83 / 18)
 osl.add_joint("ankle", gear_ratio=9 * 83 / 18)
