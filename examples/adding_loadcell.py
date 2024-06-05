@@ -2,8 +2,6 @@ import numpy as np
 
 from opensourceleg.osl import OpenSourceLeg
 
-print("testing")
-
 LOADCELL_MATRIX = np.array(
     [
         (-38.72600, -1817.74700, 9.84900, 43.37400, -44.54000, 1824.67000),
