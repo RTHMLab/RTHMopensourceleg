@@ -2,6 +2,7 @@
 A basic motion script that moves the osl joints through their range of motion.
 This script can be helpful when getting started to make sure the OSL is functional.
 
+
 Kevin Best
 Neurobionics Lab
 Robotics Department
@@ -13,6 +14,8 @@ import numpy as np
 
 from opensourceleg.osl import OpenSourceLeg
 from opensourceleg.tools import units
+
+print("Test")
 
 osl = OpenSourceLeg(frequency=200)
 osl.add_joint("knee", gear_ratio=9 * 83 / 18)
