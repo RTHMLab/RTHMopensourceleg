@@ -2,8 +2,6 @@
 A basic motion script that moves the osl joints through their range of motion.
 This script can be helpful when getting started to make sure the OSL is functional.
 
-Testing 1 2 
-
 Kevin Best
 Neurobionics Lab
 Robotics Department
