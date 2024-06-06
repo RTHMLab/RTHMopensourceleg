@@ -109,7 +109,7 @@ class OpenSourceLeg:
             The name of the joint, by default "knee"
         port : str, optional
             The serial port that the joint is connected to, by default None. If
-            None, the first active port will be used.
+            None, the first active port willl be used.
         baud_rate : int, optional
             The baud rate of the serial communication, by default 230400
         gear_ratio : float, optional

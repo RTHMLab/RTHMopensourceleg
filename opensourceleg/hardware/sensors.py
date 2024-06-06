@@ -201,7 +201,7 @@ class Loadcell:
             self._log.info(
                 f"[{self.__repr__()}] Initiating zeroing routine, please ensure that there is no ground contact force."
             )
-            time.sleep(1)
+            time.sleep(3)
 
             if self._is_dephy:
                 if self._joint.is_streaming:
