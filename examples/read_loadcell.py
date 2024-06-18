@@ -18,24 +18,29 @@ LOADCELL_MATRIX = np.array(
 osl = OpenSourceLeg(frequency=200, file_name="getting_started.log")
 osl.add_loadcell(dephy_mode=False, offline_mode=False, loadcell_matrix=LOADCELL_MATRIX)
 
-# Calibrate the load cell
-osl.calibrate_loadcell()
-osl.loadcell.initialize()
-print(osl.loadcell._loadcell_zero)
-loadcell_zero = osl.loadcell._loadcell_zero
+with osl:
 
-# Define a function to read and print load cell data
-def read_loadcell_data(duration: int = 10, read_interval: float = 1.0, loadcell_zero: np = np.zeros(shape=(1, 6), dtype=np.double)):
-    start_time = time.time()
-    while time.time() - start_time < duration:
-        osl.loadcell.update(loadcell_zero)
-        if osl.has_loadcell:
-            fx = osl.loadcell.fx
-            fy = osl.loadcell.fy
-            fz = osl.loadcell.fz
-            print(f"fx: {fx}, fy: {fy}, fz: {fz}")
-        time.sleep(read_interval)
+    # Calibrate the load cell
+    #osl.calibrate_loadcell()
+    osl.loadcell.initialize()
+    print(osl.loadcell._loadcell_zero)
+    loadcell_zero = osl.loadcell._loadcell_zero
 
-# Read and print load cell data for 10 seconds with a 1-second interval
-read_loadcell_data(duration=10, read_interval=1.0, loadcell_zero = osl.loadcell._loadcell_zero)
+    # Define a function to read and print load cell data
+    def read_loadcell_data(duration: int = 10, read_interval: float = 1.0, loadcell_zero: np = np.zeros(shape=(1, 6), dtype=np.double)):
+        start_time = time.time()
+        while time.time() - start_time < duration:
+            osl.loadcell.update(loadcell_zero)
+            if osl.has_loadcell:
+                fx = osl.loadcell.fx
+                fy = osl.loadcell.fy
+                fz = osl.loadcell.fz
+                # print(f"fx: {fx}, fy: {fy}, fz: {fz}")
+                print(osl.loadcell._lc.data)
+                print(osl.loadcell._lc.genvars)
+            time.sleep(read_interval)
+
+    # Read and print load cell data for 10 seconds with a 1-second interval
+    read_loadcell_data(duration=10, read_interval=1.0, loadcell_zero = osl.loadcell._loadcell_zero)
+
 

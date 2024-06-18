@@ -70,7 +70,7 @@ class StrainAmp:
     def _read_compressed_strain(self):
         """Used for more recent versions of strain amp firmware"""
         try:
-            self.data = self._SMBus.read_i2c_block_data(self.addr, self.MEM_R_CH1_H, 10)
+            self.data = self._SMBus.read_i2c_block_data(self.addr, self.MEM_R_CH1_H, 12)
             self.failed_reads = 0
         except OSError as e:
             self.failed_reads += 1
@@ -78,7 +78,7 @@ class StrainAmp:
             if self.failed_reads >= 5:
                 raise Exception("Load cell unresponsive.")
         # unpack them and return as nparray
-        return self._unpack_compressed_strain(self.data)
+        return self._unpack_uncompressed_strain(self.data)
 
     def update(self):
         """Called to update data of strain amp. Also returns data.
