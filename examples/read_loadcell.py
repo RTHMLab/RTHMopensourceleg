@@ -35,14 +35,21 @@ with osl:
                 fx = osl.loadcell.fx
                 fy = osl.loadcell.fy
                 fz = osl.loadcell.fz
+<<<<<<< HEAD
                 # print(f"fx: {fx}, fy: {fy}, fz: {fz}")
                 print(osl.loadcell._lc.data)
+=======
+                #print(f"fx: {fx}, fy: {fy}, fz: {fz}")
+>>>>>>> cb40a1c75c6273b6cd036cbf3847dcf0f72e73f6
                 print(osl.loadcell._lc.genvars)
             time.sleep(read_interval)
 
     # Read and print load cell data for 10 seconds with a 1-second interval
     read_loadcell_data(duration=10, read_interval=1.0, loadcell_zero = osl.loadcell._loadcell_zero)
+<<<<<<< HEAD
 
     print(f"Failed Reads: {osl.loadcell._lc.failed_reads}")
 
+=======
+>>>>>>> cb40a1c75c6273b6cd036cbf3847dcf0f72e73f6
 
