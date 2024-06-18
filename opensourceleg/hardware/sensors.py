@@ -19,7 +19,7 @@ This module defines classes related to load cell management, specifically for th
 Usage Guide:
 
 1. For load cell management, create an instance of `Loadcell` with appropriate parameters (e.g., dephy_mode, joint, amp_gain, exc, loadcell_matrix, logger).
-2. Optionally, initialize the load cell zero using the `initialize` method.
+2. Optionally, calibrate the load cell zero using the `calibrate` method.
 3. Update the load cell data using the `update` method.
 4. Access force and moment values using the properties like `fx`, `fy`, `fz`, `mx`, `my`, `mz`.
 5. For testing, use the mocked classes `MockStrainAmp` and `MockLoadcell` as needed.
@@ -58,8 +58,7 @@ class StrainAmp:
         time.sleep(1)
         self.bus = bus
         self.addr = I2C_addr
-        self.genvars = np.zeros((3, 6))
-        self.indx = 0
+        self.genvars = np.zeros((1, 6))
         self.is_streaming = True
         self.data: list[int] = []
         self.failed_reads = 0
@@ -70,7 +69,7 @@ class StrainAmp:
     def _read_compressed_strain(self):
         """Used for more recent versions of strain amp firmware"""
         try:
-            self.data = self._SMBus.read_i2c_block_data(self.addr, self.MEM_R_CH1_H, 12)
+            self.data = self._SMBus.read_i2c_block_data(self.addr, self.MEM_R_CH1_H, 10)
             self.failed_reads = 0
         except OSError as e:
             self.failed_reads += 1
@@ -78,15 +77,14 @@ class StrainAmp:
             if self.failed_reads >= 5:
                 raise Exception("Load cell unresponsive.")
         # unpack them and return as nparray
-        return self._unpack_uncompressed_strain(self.data)
+        return self._unpack_compressed_strain(self.data)
 
     def update(self):
         """Called to update data of strain amp. Also returns data.
-        Data is median filtered (max one sample delay) to avoid i2c issues.
+        Median filter has been removed for speed.
         """
-        self.genvars[self.indx, :] = self._read_compressed_strain()
-        self.indx: int = (self.indx + 1) % 3
-        return np.median(a=self.genvars, axis=0)
+        self.genvars = self._read_compressed_strain()
+        return self.genvars
 
     @staticmethod
     def _unpack_uncompressed_strain(data):
@@ -153,8 +151,8 @@ class Loadcell:
         return f"Loadcell"
 
     def reset(self):
-        self._zeroed = False
         self._loadcell_zero = np.zeros(shape=(1, 6), dtype=np.double)
+        self._zeroed = False
 
     def update(self, loadcell_zero=None) -> None:
         """
@@ -190,7 +188,7 @@ class Loadcell:
                 - loadcell_zero
             )
 
-    def initialize(self, number_of_iterations: int = 2000) -> None:
+    def calibrate(self, number_of_iterations: int = 2000, reset=False) -> None:
         """
         Obtains the initial loadcell reading (aka) loadcell_zero.
         This is automatically subtraced off for subsequent calls of the update method.
@@ -199,9 +197,8 @@ class Loadcell:
 
         if not self._zeroed:
             self._log.info(
-                f"[{self.__repr__()}] Initiating zeroing routine, please ensure that there is no ground contact force!"
+                f"[{self.__repr__()}] Initiating zeroing routine, please ensure that there is no ground contact force.\n{input('Press any key to start.')}"
             )
-            time.sleep(1)
 
             if self._is_dephy:
                 if self._joint.is_streaming:
@@ -225,14 +222,14 @@ class Loadcell:
             self._zeroed = True
             self._log.info(f"[{self.__repr__()}] Zeroing routine complete.")
 
-        elif (
-            input(
-                f"[{self.__repr__()}] Would you like to re-initialize loadcell? (y/n): "
-            )
-            == "y"
-        ):
+        elif reset:
             self.reset()
-            self.initialize()
+            self.calibrate()
+
+        else:
+            self._log.info(
+                f"[{self.__repr__()}] Loadcell has already been zeroed. To recalibrate, set reset=True in the calibrate method or call reset() first."
+            )
 
     @property
     def is_zeroed(self) -> bool:
@@ -362,8 +359,7 @@ class MockStrainAmp(StrainAmp):
         self._SMBus = MockSMBus(bus=bus)
         self.bus = bus
         self.addr = I2C_addr
-        self.genvars = np.zeros((3, 6))
-        self.indx = 0
+        self.genvars = np.zeros((1, 6))
         self.is_streaming = True
         self.data = []
         self.failed_reads = 0
