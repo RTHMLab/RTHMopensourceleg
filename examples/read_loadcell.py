@@ -22,7 +22,7 @@ with osl:
 
     # Calibrate the load cell
     #osl.calibrate_loadcell()
-    osl.loadcell.initialize()
+    osl.loadcell.calibrate()
     print(osl.loadcell._loadcell_zero)
     loadcell_zero = osl.loadcell._loadcell_zero
 
@@ -37,7 +37,6 @@ with osl:
                 fz = osl.loadcell.fz
                 # print(f"fx: {fx}, fy: {fy}, fz: {fz}")
                 print(osl.loadcell._lc.data)
-                #print(f"fx: {fx}, fy: {fy}, fz: {fz}")
                 print(osl.loadcell._lc.genvars)
             time.sleep(read_interval)
 
