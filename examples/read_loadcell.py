@@ -43,4 +43,6 @@ with osl:
     # Read and print load cell data for 10 seconds with a 1-second interval
     read_loadcell_data(duration=10, read_interval=1.0, loadcell_zero = osl.loadcell._loadcell_zero)
 
+    print(f"Failed Reads: {osl.loadcell._lc.failed_reads}")
+
 
