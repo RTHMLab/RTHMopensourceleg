@@ -199,7 +199,7 @@ class Loadcell:
 
         if not self._zeroed:
             self._log.info(
-                f"[{self.__repr__()}] Initiating zeroing routine, please ensure that there is no ground contact force."
+                f"[{self.__repr__()}] Initiating zeroing routine, please ensure that there is no ground contact force!"
             )
             time.sleep(1)
 
