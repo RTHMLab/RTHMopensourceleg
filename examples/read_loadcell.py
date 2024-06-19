@@ -20,9 +20,6 @@ osl = OpenSourceLeg(frequency=200, file_name="getting_started.log")
 osl.add_loadcell(dephy_mode=False, offline_mode=False, loadcell_matrix=LOADCELL_MATRIX)
 
 with osl:
-
-    # Calibrate the load cell
-    osl.loadcell.calibrate()
     print("Load cell zero:", osl.loadcell._loadcell_zero)
     loadcell_zero = osl.loadcell._loadcell_zero
 
@@ -83,7 +80,7 @@ with osl:
                 # print(osl.loadcell._lc.genvars)
                 # print(f"Time: {current_time:.2f}s, fx: {fx}, fy: {fy}, fz: {fz}")
             # time.sleep(read_interval)
-            time.sleep(0.5)
+            time.sleep(1/2000)
 
     # Read and print load cell data for 10 seconds with a 1-second interval
     # read_loadcell_data(duration=10, read_interval=0.5, loadcell_zero = osl.loadcell._loadcell_zero)
