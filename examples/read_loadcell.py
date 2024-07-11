@@ -80,7 +80,7 @@ with osl:
                 # print(osl.loadcell._lc.genvars)
                 # print(f"Time: {current_time:.2f}s, fx: {fx}, fy: {fy}, fz: {fz}")
             # time.sleep(read_interval)
-            time.sleep(1/2000)
+            time.sleep(1/1000)
 
     # Read and print load cell data for 10 seconds with a 1-second interval
     # read_loadcell_data(duration=10, read_interval=0.5, loadcell_zero = osl.loadcell._loadcell_zero)
