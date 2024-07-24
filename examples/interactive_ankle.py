@@ -19,7 +19,7 @@ with osl:
     osl.home()
     input("Homing complete: Press enter to continue")
     osl.ankle.set_mode(osl.ankle.control_modes.position)
-    osl.ankle.set_position_gains(kp=5)
+    osl.ankle.set_position_gains(kp=25)
 
     current_position = -30 * np.pi / 180
     increment = units.convert_to_default(10, units.position.deg)
@@ -56,5 +56,6 @@ with osl:
     
     osl.update()
     current_position_deg = osl.ankle.output_position * 180 / np.pi
+    print(new_position)
     print(osl.ankle.output_position)
     print(current_position_deg)
