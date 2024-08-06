@@ -11,6 +11,7 @@ import numpy as np
 from flexsea.device import Device
 
 from ..tools.logger import Logger
+from ..tools.safety import ThermalLimitException
 from .thermal import ThermalModel
 
 """
@@ -99,6 +100,7 @@ NM_PER_RAD_TO_K: float = RAD_PER_COUNT / IMPEDANCE_C * 1e3 / NM_PER_AMP
 NM_S_PER_RAD_TO_B: float = RAD_PER_DEG / IMPEDANCE_A * 1e3 / NM_PER_AMP
 
 MAX_CASE_TEMPERATURE: float = 80
+MAX_WINDING_TEMPERATURE: float = 110
 
 DEFAULT_POSITION_GAINS = Gains(kp=50, ki=0, kd=0, K=0, B=0, ff=0)
 
@@ -456,8 +458,11 @@ class DephyActpack(Device):
 
         self._mode: ActpackMode = self.control_modes.voltage
 
+        self._max_case_temperature = MAX_CASE_TEMPERATURE
+        self._max_winding_temperature = MAX_WINDING_TEMPERATURE
+
     def __repr__(self) -> str:
-        return f"DephyActpack[{self._name}]"
+        return f"{self._name}[DephyActpack]"
 
     def start(self) -> None:
         try:
@@ -477,12 +482,14 @@ class DephyActpack(Device):
         self._data = self.read()
         self._mode.enter()
 
-    def stop(self) -> None:
+    def stop(self, close_communication=True) -> None:
         self.set_mode(mode=self.control_modes.voltage)
         self.set_voltage(value=0)
 
         time.sleep(0.1)
-        self.close()
+
+        if close_communication:
+            self.close()
 
     def update(self) -> None:
         """
@@ -496,6 +503,22 @@ class DephyActpack(Device):
                 dt=(1 / self._frequency),
                 motor_current=self.motor_current,
             )
+
+            if self.case_temperature >= self.max_case_temperature:
+                self._log.error(
+                    msg=f"[{str.upper(self._name)}] Case thermal limit {self.max_case_temperature} reached. Stopping motor."
+                )
+                raise ThermalLimitException()
+
+            if self.winding_temperature >= self.max_winding_temperature:
+                self._log.error(
+                    msg=f"[{str.upper(self._name)}] Winding thermal limit {self.max_winding_temperature} reached. Stopping motor."
+                )
+                raise ThermalLimitException()
+
+            # Check for thermal fault, bit 2 of the execute status byte
+            if self._data.status_ex & 0b00000010 == 0b00000010:
+                raise RuntimeError("Actpack Thermal Limit Tripped")
 
         else:
             self._log.warning(
@@ -683,6 +706,24 @@ class DephyActpack(Device):
             ),
         )
 
+    def set_max_case_temperature(self, temperature: float) -> None:
+        """
+        Set the maximum temperature of the motor.
+
+        Args:
+            temperature (float): temperature in degrees Celsius
+        """
+        self._max_case_temperature = temperature
+
+    def set_max_winding_temperature(self, temperature: float) -> None:
+        """
+        Set the maximum temperature of the windings.
+
+        Args:
+            temperature (float): temperature in degrees Celsius
+        """
+        self._max_winding_temperature = temperature
+
     @property
     def frequency(self) -> int:
         return self._frequency
@@ -821,7 +862,7 @@ class DephyActpack(Device):
     def joint_velocity(self) -> float:
         """Measured velocity from the joint encoder in rad/s."""
         if self._data is not None:
-            return float(self._data.ank_vel * RAD_PER_COUNT)
+            return float(self._data.ank_vel * RAD_PER_DEG) * self.joint_direction
         else:
             return 0.0
 
@@ -843,6 +884,16 @@ class DephyActpack(Device):
             return float(self._thermal_model.T_w)
         else:
             return 0.0
+
+    @property
+    def max_case_temperature(self) -> float:
+        """Maximum allowable case temperature in celsius."""
+        return self._max_case_temperature
+
+    @property
+    def max_winding_temperature(self) -> float:
+        """Maximum allowable winding temperature in celsius."""
+        return self._max_winding_temperature
 
     @property
     def thermal_scaling_factor(self) -> float:
@@ -987,6 +1038,7 @@ class MockData:
         self.gyrox = gyrox
         self.gyroy = gyroy
         self.gyroz = gyroz
+        self.status_ex = 0b00000000
 
     def __repr__(self):
         return f"MockData"
@@ -1075,6 +1127,9 @@ class MockDephyActpack(DephyActpack):
         self.control_modes: ActpackControlModes = ActpackControlModes(device=self)
         self._mode: ActpackMode = self.control_modes.voltage
 
+        self._max_case_temperature = MAX_CASE_TEMPERATURE
+        self._max_winding_temperature = MAX_WINDING_TEMPERATURE
+
     # Overrides the open method to function without a device
     def open(self, freq, log_level, log_enabled):
         self._log.debug(msg=f"[{self.__repr__()}] Opening Device at {self.port}")
@@ -1121,6 +1176,7 @@ class MockDephyActpack(DephyActpack):
         self._data.gyrox += small_noise
         self._data.gyroy += small_noise
         self._data.gyroz += small_noise
+        self._data.status_ex = 0b00000000
         return self._data
 
     # Overrides the close method to do nothing

@@ -80,8 +80,17 @@ def test_opensourceleg_init(mock_time):
 #     assert OpenSourceLeg._instance == None
 
 
+@pytest.fixture
+def patch_input(monkeypatch):
+    monkeypatch.setattr("builtins.input", lambda _: "y")
+
+
 def test_osl_enter(
-    mock_get_active_ports, joint_patched: Joint, loadcell_patched: Loadcell, patch_sleep
+    mock_get_active_ports,
+    joint_patched: Joint,
+    loadcell_patched: Loadcell,
+    patch_sleep,
+    patch_input,
 ):
     """
     Tests the OpenSourceLeg __enter__ method\n
@@ -233,7 +242,7 @@ def test_osl_add_joint_one_port(joint_patched: Joint, mock_get_active_ports1):
     assert test_osl_ajop._knee.name == "knee"
     assert test_osl_ajop._knee.port == "/dev/ttyACM0"
     assert test_osl_ajop._knee.gear_ratio == 1.0
-    assert test_osl_ajop._knee.max_temperature == 80
+    assert test_osl_ajop._knee.max_case_temperature == 80
     assert test_osl_ajop._knee.is_homed == False
     assert test_osl_ajop._knee.encoder_map == None
     assert test_osl_ajop._knee.output_position == 0.0
@@ -259,7 +268,7 @@ def test_osl_add_joint_ports_available(joint_patched: Joint, mock_get_active_por
     assert test_osl_aj._knee.name == "knee"
     assert test_osl_aj._knee.port == "/dev/ttyACM0"
     assert test_osl_aj._knee.gear_ratio == 1.0
-    assert test_osl_aj._knee.max_temperature == 80
+    assert test_osl_aj._knee.max_case_temperature == 80
     assert test_osl_aj._knee.is_homed == False
     assert test_osl_aj._knee.encoder_map == None
     assert test_osl_aj._knee.output_position == 0.0
@@ -270,7 +279,7 @@ def test_osl_add_joint_ports_available(joint_patched: Joint, mock_get_active_por
     assert test_osl_aj._ankle.name == "ankle"
     assert test_osl_aj._ankle.port == "/dev/ttyACM0"
     assert test_osl_aj._ankle.gear_ratio == 1.0
-    assert test_osl_aj._ankle.max_temperature == 80
+    assert test_osl_aj._ankle.max_case_temperature == 80
     assert test_osl_aj._ankle.is_homed == False
     assert test_osl_aj._ankle.encoder_map == None
     assert test_osl_aj._ankle.output_position == 0.0
@@ -336,14 +345,18 @@ def test_osl_update_knee(
     test_osl_u_knee.log = Logger(file_path="tests/test_osl/test_osl_u_knee")
     test_osl_u_knee.log.set_stream_level("DEBUG")
     test_osl_u_knee.add_joint(name="knee")
+    test_osl_u_knee._knee._log = test_osl_u_knee.log
     test_osl_u_knee._knee._data = Data()
     test_osl_u_knee._knee.is_streaming = True
-    test_osl_u_knee._knee._max_temperature = 1.0
+    test_osl_u_knee._knee.set_max_case_temperature(1.0)
     test_osl_u_knee.update()
     assert test_osl_u_knee._knee._data.batt_volt == 15
     with open("tests/test_osl/test_osl_u_knee.log") as f:
         contents = f.read()
-        assert "WARNING: [KNEE] Thermal limit 1.0 reached. Stopping motor." in contents
+        assert (
+            "ERROR: [KNEE] Case thermal limit 1.0 reached. Stopping motor." in contents
+        )
+        assert "ERROR: [OSL] Software thermal limit exceeded. Exiting." in contents
 
 
 def test_osl_update_ankle(
@@ -360,14 +373,19 @@ def test_osl_update_ankle(
     test_osl_u_ankle.log = Logger(file_path="tests/test_osl/test_osl_u_ankle")
     test_osl_u_ankle.log.set_stream_level("DEBUG")
     test_osl_u_ankle.add_joint(name="ankle")
+    test_osl_u_ankle._ankle._log = test_osl_u_ankle.log
     test_osl_u_ankle._ankle._data = Data()
     test_osl_u_ankle._ankle.is_streaming = True
-    test_osl_u_ankle._ankle._max_temperature = 1.0
+    test_osl_u_ankle._ankle._max_case_temperature = 1.0
     test_osl_u_ankle.update()
     assert test_osl_u_ankle._ankle._data.batt_volt == 15
     with open("tests/test_osl/test_osl_u_ankle.log") as f:
         contents = f.read()
-        assert "WARNING: [ANKLE] Thermal limit 1.0 reached. Stopping motor." in contents
+        assert (
+            "ERROR: [ANKLE] Case thermal limit 1.0 reached. Stopping motor." in contents
+        )
+
+        assert "ERROR: [OSL] Software thermal limit exceeded. Exiting." in contents
 
 
 def test_osl_update_loadcell(loadcell_patched: Loadcell, patch_sleep):
@@ -559,7 +577,7 @@ def test_osl_home(joint_patched: Joint, mock_get_active_ports):
     assert test_osl_h._ankle._is_homed == True
 
 
-def test_osl_calibrate_loadcell(loadcell_patched: Loadcell):
+def test_osl_calibrate_loadcell(loadcell_patched: Loadcell, patch_input):
     """
     Tests the OpenSourceLeg calibrate_loadcell method\n
     Intializes an OpenSourceLeg object with a logger of the lowest stream level
@@ -570,14 +588,13 @@ def test_osl_calibrate_loadcell(loadcell_patched: Loadcell):
 
     test_osl_cl = OpenSourceLeg()
     test_osl_cl.add_loadcell(loadcell_matrix=LOADCELL_MATRIX)
-    test_osl_cl._loadcell._zeroed = True
     test_osl_cl.log = Logger(file_path="tests/test_osl/test_osl_cl")
     test_osl_cl.log.set_stream_level("DEBUG")
     test_osl_cl.calibrate_loadcell()
     with open("tests/test_osl/test_osl_cl.log") as f:
         contents = f.read()
         assert "[OSL] Calibrating loadcell." in contents
-    assert test_osl_cl._loadcell._zeroed == False
+    assert test_osl_cl._loadcell._zeroed == True
 
 
 def test_osl_reset(joint_patched: Joint, mock_get_active_ports, patch_sleep):

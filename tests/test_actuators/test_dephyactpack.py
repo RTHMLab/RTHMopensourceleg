@@ -102,6 +102,8 @@ class MockDephyActpack(DephyActpack):
         self.control_modes: ActpackControlModes = ActpackControlModes(device=self)
 
         self._mode: ActpackMode = self.control_modes.voltage
+        self._max_case_temperature = 80
+        self._max_winding_temperature = 110
 
     # Overrides the open method to function without a device
     def open(self, freq, log_level, log_enabled):
@@ -147,6 +149,8 @@ class MockDephyActpack(DephyActpack):
         self._data.gyrox += 15
         self._data.gyroy += 15
         self._data.gyroz += 15
+        self._data.status_ex = 0b00000000
+
         return self._data
 
     # Overrides the close method to do nothing
@@ -203,6 +207,7 @@ class Data:
         self.gyrox = gyrox
         self.gyroy = gyroy
         self.gyroz = gyroz
+        self.status_ex = 0b00000000
 
 
 @pytest.fixture
@@ -353,7 +358,7 @@ def test_properties_nonzero(dephyactpack_patched: DephyActpack):
     assert mock_dap1.motor_velocity == 10 * np.pi / 180
     assert mock_dap1.motor_acceleration == 20
     assert mock_dap1.joint_position == 20 * 2 * np.pi / 16384
-    assert mock_dap1.joint_velocity == 10 * 2 * np.pi / 16384
+    assert mock_dap1.joint_velocity == 10 * np.pi / 180
     assert mock_dap1.case_temperature == 20
     assert mock_dap1.winding_temperature == 21
     assert mock_dap1.genvars.shape == (6,)
@@ -685,7 +690,7 @@ def test_dephyactpack_update(dephyactpack_patched: DephyActpack):
     with open("tests/test_actuators/test_dephyactpack_update_log.log") as f:
         contents = f.read()
         assert (
-            "WARNING: [DephyActpack[MockDephyActpack]] Please open() the device before streaming data."
+            "WARNING: [MockDephyActpack[DephyActpack]] Please open() the device before streaming data."
             in contents
         )
     # Set the is_streaming attribute to True to simulate an open device
@@ -767,7 +772,7 @@ def test_dephyactpack_set_mode(dephyactpack_patched: DephyActpack):
     with open("tests/test_actuators/test_dephyactpack_set_mode_log.log") as f:
         contents = f.read()
         assert (
-            "WARNING: [DephyActpack[MockDephyActpack]] Mode badmode not found"
+            "WARNING: [MockDephyActpack[DephyActpack]] Mode badmode not found"
             in contents
         )
 
@@ -819,7 +824,7 @@ def test_dephyactpack_set_position_gains(dephyactpack_patched: DephyActpack):
     with open("tests/test_actuators/test_dephyactpack_set_position_gains_log.log") as f:
         contents = f.read()
         assert (
-            "WARNING: [DephyActpack[MockDephyActpack]] Cannot set position gains in mode c_int(2)"
+            "WARNING: [MockDephyActpack[DephyActpack]] Cannot set position gains in mode c_int(2)"
             in contents
         )
 
@@ -871,7 +876,7 @@ def test_dephyactpack_set_current_gains(dephyactpack_patched: DephyActpack):
     with open("tests/test_actuators/test_dephyactpack_set_current_gains_log.log") as f:
         contents = f.read()
         assert (
-            "WARNING: [DephyActpack[MockDephyActpack]] Cannot set current gains in mode c_int(0)"
+            "WARNING: [MockDephyActpack[DephyActpack]] Cannot set current gains in mode c_int(0)"
             in contents
         )
 
@@ -925,7 +930,7 @@ def test_dephyactpack_set_impedance_gains(dephyactpack_patched: DephyActpack):
     ) as f:
         contents = f.read()
         assert (
-            "WARNING: [DephyActpack[MockDephyActpack]] Cannot set impedance gains in mode c_int(2)"
+            "WARNING: [MockDephyActpack[DephyActpack]] Cannot set impedance gains in mode c_int(2)"
             in contents
         )
 
@@ -959,7 +964,7 @@ def test_dephyactpack_set_voltage(dephyactpack_patched: DephyActpack):
     with open("tests/test_actuators/test_dephyactpack_set_voltage_log.log") as f:
         contents = f.read()
         assert (
-            "WARNING: [DephyActpack[MockDephyActpack]] Cannot set voltage in mode c_int(0)"
+            "WARNING: [MockDephyActpack[DephyActpack]] Cannot set voltage in mode c_int(0)"
             in contents
         )
 
@@ -993,7 +998,7 @@ def test_dephyactpack_set_current(dephyactpack_patched: DephyActpack):
     with open("tests/test_actuators/test_dephyactpack_set_current_log.log") as f:
         contents = f.read()
         assert (
-            "WARNING: [DephyActpack[MockDephyActpack]] Cannot set current in mode c_int(0)"
+            "WARNING: [MockDephyActpack[DephyActpack]] Cannot set current in mode c_int(0)"
             in contents
         )
 
@@ -1028,7 +1033,7 @@ def test_dephyactpack_set_motor_torque(dephyactpack_patched: DephyActpack):
     with open("tests/test_actuators/test_dephyactpack_set_motor_torque_log.log") as f:
         contents = f.read()
         assert (
-            "WARNING: [DephyActpack[MockDephyActpack]] Cannot set motor_torque in mode c_int(0)"
+            "WARNING: [MockDephyActpack[DephyActpack]] Cannot set motor_torque in mode c_int(0)"
             in contents
         )
 
@@ -1070,6 +1075,6 @@ def test_dephyactpack_set_motor_position(dephyactpack_patched: DephyActpack):
     with open("tests/test_actuators/test_dephyactpack_set_motor_position_log.log") as f:
         contents = f.read()
         assert (
-            "WARNING: [DephyActpack[MockDephyActpack]] Cannot set motor position in mode c_int(2)"
+            "WARNING: [MockDephyActpack[DephyActpack]] Cannot set motor position in mode c_int(2)"
             in contents
         )

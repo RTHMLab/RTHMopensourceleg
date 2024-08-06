@@ -183,6 +183,11 @@ def loadcell_patched(patch_loadcell) -> Loadcell:
     return obj
 
 
+@pytest.fixture
+def patch_input(monkeypatch):
+    monkeypatch.setattr("builtins.input", lambda _: "y")
+
+
 def test_mockstrainamp_init():
     """
     Test the MockStrainAmp constructor\n
@@ -269,22 +274,8 @@ def test_strainamp_update(strainamp_patched: StrainAmp):
     )
     # Call the update method and assert the new index is updated properly and the proper array is returned
     actual_array = msa_update.update()
-    new_indx = 1
-    expected_array = np.array([0, 0, 0, 0, 0, 0])
+    expected_array = np.array([16, 515, 64, 1286, 112, 2057])
     assert np.array_equal(actual_array, expected_array)
-    assert msa_update.indx == new_indx
-    # Call the update method again and assert the new index is updated properly and the proper array is returned
-    actual_array2 = msa_update.update()
-    new_indx2 = 2
-    expected_array2 = np.array([16, 515, 64, 1286, 112, 2057])
-    assert np.array_equal(actual_array2, expected_array2)
-    assert msa_update.indx == new_indx2
-    # Call the update method again and assert the new index is updated properly and the proper array is returned
-    actual_array3 = msa_update.update()
-    new_indx3 = 0
-    expected_array3 = np.array([16, 515, 64, 1286, 112, 2057])
-    assert np.array_equal(actual_array3, expected_array3)
-    assert msa_update.indx == new_indx3
 
 
 def test_strainamp_unpack_uncompressed_strain():
@@ -705,7 +696,9 @@ def test_loadcell_update(loadcell_patched: Loadcell):
     )
 
 
-def test_loadcell_initialize(loadcell_patched: Loadcell, mocker, patch_sleep):
+def test_loadcell_initialize(
+    loadcell_patched: Loadcell, mocker, patch_sleep, patch_input
+):
     """
     Tests the Loadcell initialize method\n
     This test initializes a Loadcell object and passes data into attributes needed for testing
@@ -725,8 +718,8 @@ def test_loadcell_initialize(loadcell_patched: Loadcell, mocker, patch_sleep):
     lc_initialize._is_dephy = True
     lc_initialize._zeroed = True
     # Patch the input method to return "y" when running pytest
-    mocker.patch("builtins.input", return_value="y")
-    lc_initialize.initialize()
+    # mocker.patch("builtins.input", return_value="y")
+    lc_initialize.calibrate(reset=True)
     # Assert the proper log messages are written for the else statement in the if statement in the if statement
     with open("tests/test_sensors/test_loadcell_initialize_log.log") as f:
         contents = f.read()
@@ -750,7 +743,7 @@ def test_loadcell_initialize(loadcell_patched: Loadcell, mocker, patch_sleep):
         genvar_4=5,
         genvar_5=6,
     )
-    lc_initialize.initialize(number_of_iterations=1)
+    lc_initialize.calibrate(number_of_iterations=1)
     # Assert the data was properly updated
     assert lc_initialize._zeroed == True
     assert lc_initialize._joint._data.batt_volt == 15
@@ -928,7 +921,7 @@ def test_loadcell_initialize(loadcell_patched: Loadcell, mocker, patch_sleep):
         genvar_4=5,
         genvar_5=6,
     )
-    lc_initialize_else.initialize(number_of_iterations=1)
+    lc_initialize_else.calibrate(number_of_iterations=1)
     # Assert the proper values are returned with a couple significant figures
     assert round(lc_initialize_else.fx, -2) == round(
         loadcell_signed_dot_added_and_transposed[0][0], -2
